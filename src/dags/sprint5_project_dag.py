@@ -25,13 +25,28 @@ headers = {
     "X-Cohort": str(cohort)
 }
 
-def load_raw_data_deliveries(**kwargs): 
-    method_url = '/deliveries'
-    r = requests.get( url + method_url, headers=headers)
-    response_dict = json.loads(r.content)
+def load_raw_data_deliveries(**kwargs):
 
-    df = pd.DataFrame(response_dict)
-    df.to_csv("./raw_deliveries.csv" )
+    sort_field = '_id'
+    sort_direction = 'asc'
+    limit = 50
+    offset = 0
+    id = 1 
+    method_url = '/deliveries'
+    filter = f'sort_field={sort_field}&sort_direction={sort_direction}&limit={limit}&offset={offset}'
+    r = requests.get( url + method_url + filter, headers=headers)
+    response = json.loads(r.content)
+
+    # df = pd.DataFrame(response_dict)
+    # df.to_csv("./raw_deliveries.csv" )
+
+    # получаем название колонок
+    columns = ','.join([i for i in response[0]])
+    # SQL запрос на вставку
+    sql = f"INSERT INTO {pg_schema}.{pg_table_source} (columns) VALUES %s"
+    # делаем список списков из значений словаря. response - результат get-запроса в JSON формате
+    values = [[value for value in response[i].values()] for i in range(len(response))]
+    execute_values(cursor, sql, values) 
 
 def load_raw_data_couriers(**kwargs): 
     method_url = '/couriers'
